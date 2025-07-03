@@ -1,9 +1,17 @@
 export const roles = [
-  { value: "user", label: "User", permissions: ["view"] },
   {
     value: "admin",
     label: "Admin",
-    permissions: ["view", "add", "edit", "delete"],
+    permissions: ["create", "read", "update", "delete"],
   },
-  { value: "manager", label: "Manager", permissions: ["view", "add", "edit"] },
+  {
+    value: "user",
+    label: "User",
+    permissions: ["create", "read"],
+  },
+  {
+    value: "manager",
+    label: "Manager",
+    permissions: ["create", "read", "update"],
+  },
 ];
