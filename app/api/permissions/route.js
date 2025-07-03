@@ -14,29 +14,85 @@ function getPermissionsForRoles(userRoles) {
   return Array.from(permissions);
 }
 
-export async function GET(request) {
-  const { searchParams } = new URL(request.url);
-  const email = searchParams.get("email");
-  if (!email) {
-    return Response.json({ message: "Email is required" }, { status: 400 });
-  }
-  const user = users.find((u) => u.email === email);
-  if (!user) {
-    return Response.json({ message: "User not found" }, { status: 404 });
-  }
-  const permissions = getPermissionsForRoles(user.roles);
-  return Response.json({ email, permissions });
+const DEFAULT_PERMISSIONS = [
+  "user.create",
+  "user.read",
+  "user.update",
+  "user.delete",
+];
+
+let permissions = [...DEFAULT_PERMISSIONS];
+
+export async function GET() {
+  const allPermissions = Array.from(
+    new Set([...DEFAULT_PERMISSIONS, ...permissions])
+  );
+  return Response.json(allPermissions);
 }
 
 export async function POST(request) {
-  const { email } = await request.json();
-  if (!email) {
-    return Response.json({ message: "Email is required" }, { status: 400 });
+  const body = await request.json();
+  if (!body.name) {
+    return new Response(
+      JSON.stringify({ error: "Permission name is required" }),
+      {
+        status: 400,
+      }
+    );
   }
-  const user = users.find((u) => u.email === email);
-  if (!user) {
-    return Response.json({ message: "User not found" }, { status: 404 });
+  const newPermission = body.name;
+  if (!permissions.includes(newPermission)) {
+    permissions.push(newPermission);
   }
-  const permissions = getPermissionsForRoles(user.roles);
-  return Response.json({ email, permissions });
+  return Response.json({ name: newPermission }, { status: 201 });
+}
+
+export async function DELETE(request) {
+  const { index } = await request.json();
+  if (typeof index !== "number" || index < 0 || index >= permissions.length) {
+    return new Response(JSON.stringify({ error: "Invalid index" }), {
+      status: 400,
+    });
+  }
+
+  if (DEFAULT_PERMISSIONS.includes(permissions[index])) {
+    return new Response(
+      JSON.stringify({ error: "Cannot delete default permission" }),
+      { status: 403 }
+    );
+  }
+  permissions.splice(index, 1);
+  return Response.json({ success: true });
+}
+
+export async function PUT(request) {
+  const { index, name } = await request.json();
+  if (typeof index !== "number" || index < 0 || index >= permissions.length) {
+    return new Response(JSON.stringify({ error: "Invalid index" }), {
+      status: 400,
+    });
+  }
+  if (!name) {
+    return new Response(
+      JSON.stringify({ error: "Permission name is required" }),
+      { status: 400 }
+    );
+  }
+
+  if (DEFAULT_PERMISSIONS.includes(permissions[index])) {
+    return new Response(
+      JSON.stringify({ error: "Cannot edit default permission" }),
+      { status: 403 }
+    );
+  }
+  permissions[index] = name;
+  return Response.json({ name });
+}
+
+export async function GETPermissions() {
+  return Response.json(permissions);
+}
+
+export async function GETPermissionsList() {
+  return Response.json(permissions);
 }

@@ -8,6 +8,7 @@ export default function UsersTable() {
   const [users, setUsers] = useState([]);
   const [roles, setRoles] = useState([]);
   const [showModal, setShowModal] = useState(false);
+  const [showAccessDenied, setShowAccessDenied] = useState(false);
   const [form, setForm] = useState({
     name: "",
     email: "",
@@ -15,9 +16,8 @@ export default function UsersTable() {
     roles: [],
   });
 
-  // Simulate current user roles (replace with real auth in production)
   const currentUserRoles = ["admin"];
-  // Get all permissions for current user
+
   const currentPermissions = Array.from(
     new Set(
       currentUserRoles.flatMap((role) => {
@@ -45,25 +45,39 @@ export default function UsersTable() {
     setRoles(data);
   };
 
-  const handleAddUser = async () => {
-    if (!currentPermissions.includes("add")) {
-      router.push("/access-denied");
-      return;
-    }
-    const res = await fetch("/api/users", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ...form, roles: form.roles }),
-    });
-
-    const newUser = await res.json();
-    setUsers([...users, newUser]);
-    setForm({ name: "", email: "", phone: "", roles: [] });
-    setShowModal(false);
+  const handleOpenModal = () => {
+    setShowModal(true);
+    fetchRoles();
   };
 
-  // If user cannot view, show access denied
-  if (!currentPermissions.includes("view")) {
+  const handleAddUser = async () => {
+    if (!currentPermissions.includes("create")) {
+      setShowAccessDenied(true);
+      return;
+    }
+    try {
+      const res = await fetch("/api/users", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ ...form, roles: form.roles }),
+      });
+
+      if (!res.ok) {
+        alert("Failed to create user: " + res.statusText);
+        return;
+      }
+
+      const newUser = await res.json();
+      await fetchUsers();
+      await fetchRoles();
+      setForm({ name: "", email: "", phone: "", roles: [] });
+      setShowModal(false);
+    } catch (error) {
+      alert("An error occurred: " + error.message);
+    }
+  };
+
+  if (!currentPermissions.includes("read")) {
     return <AccessDenied />;
   }
 
@@ -72,7 +86,7 @@ export default function UsersTable() {
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-xl font-bold">Users</h2>
         <button
-          onClick={() => setShowModal(true)}
+          onClick={handleOpenModal}
           className="bg-blue-500 text-black px-4 py-2 rounded"
         >
           + Add User
@@ -98,7 +112,7 @@ export default function UsersTable() {
             </tr>
           ) : (
             users.map((user, index) => (
-              <tr key={`user-${user.id}-${index}`}>
+              <tr key={user.id}>
                 <td className="py-2 px-4 border">{user.id}</td>
                 <td className="py-2 px-4 border">{user.name}</td>
                 <td className="py-2 px-4 border">{user.email}</td>
@@ -119,70 +133,85 @@ export default function UsersTable() {
           <div className="bg-blue-500 p-6 rounded w-96 shadow-lg">
             <h3 className="text-lg font-semibold mb-4">Add New User</h3>
 
-            <input
-              type="text"
-              placeholder="Name"
-              value={form.name}
-              onChange={(e) => setForm({ ...form, name: e.target.value })}
-              className="w-full mb-3 border p-2 rounded"
-            />
-            <input
-              type="email"
-              placeholder="Email"
-              value={form.email}
-              onChange={(e) => setForm({ ...form, email: e.target.value })}
-              className="w-full mb-3 border p-2 rounded"
-            />
-            <input
-              type="text"
-              placeholder="Phone"
-              value={form.phone}
-              onChange={(e) => setForm({ ...form, phone: e.target.value })}
-              className="w-full mb-3 border p-2 rounded"
-            />
-            <div className="w-full mb-3">
-              <label className="block mb-1 font-medium">Roles</label>
-              <div className="flex flex-wrap gap-2">
-                {roles.map((role) => (
-                  <label key={role.value} className="flex items-center gap-1">
-                    <input
-                      type="checkbox"
-                      value={role.value}
-                      checked={form.roles.includes(role.value)}
-                      onChange={(e) => {
-                        if (e.target.checked) {
-                          setForm({
-                            ...form,
-                            roles: [...form.roles, role.value],
-                          });
-                        } else {
-                          setForm({
-                            ...form,
-                            roles: form.roles.filter((r) => r !== role.value),
-                          });
-                        }
-                      }}
-                    />
-                    {role.label}
-                  </label>
-                ))}
-              </div>
-            </div>
+            {showAccessDenied ? (
+              <AccessDenied />
+            ) : (
+              <>
+                <input
+                  type="text"
+                  placeholder="Name"
+                  value={form.name}
+                  onChange={(e) => setForm({ ...form, name: e.target.value })}
+                  className="w-full mb-3 border p-2 rounded"
+                />
+                <input
+                  type="email"
+                  placeholder="Email"
+                  value={form.email}
+                  onChange={(e) => setForm({ ...form, email: e.target.value })}
+                  className="w-full mb-3 border p-2 rounded"
+                />
+                <input
+                  type="text"
+                  placeholder="Phone"
+                  value={form.phone}
+                  onChange={(e) => setForm({ ...form, phone: e.target.value })}
+                  className="w-full mb-3 border p-2 rounded"
+                />
+                <div className="w-full mb-3">
+                  <label className="block mb-1 font-medium">Roles</label>
+                  <div className="flex flex-wrap gap-2">
+                    {roles.map((role) => (
+                      <label
+                        key={role.value}
+                        className="flex items-center gap-1"
+                      >
+                        <input
+                          type="checkbox"
+                          value={role.value}
+                          checked={form.roles.includes(role.value)}
+                          onChange={(e) => {
+                            if (e.target.checked) {
+                              setForm({
+                                ...form,
+                                roles: [...form.roles, role.value],
+                              });
+                            } else {
+                              setForm({
+                                ...form,
+                                roles: form.roles.filter(
+                                  (r) => r !== role.value
+                                ),
+                              });
+                            }
+                          }}
+                        />
+                        {role.label}
+                      </label>
+                    ))}
+                  </div>
+                </div>
 
-            <div className="flex justify-end gap-2 mt-4">
-              <button
-                onClick={() => setShowModal(false)}
-                className="px-4 py-2 border rounded"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleAddUser}
-                className="bg-green-500 text-black px-4 py-2 rounded"
-              >
-                Save
-              </button>
-            </div>
+                <div className="flex justify-end gap-2 mt-4">
+                  <button
+                    onClick={() => {
+                      setShowModal(false);
+                      setShowAccessDenied(false);
+                      fetchRoles();
+                    }}
+                    className="px-4 py-2 border rounded"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleAddUser}
+                    className="bg-green-500 text-black px-4 py-2 rounded"
+                  >
+                    Save
+                  </button>
+                </div>
+              </>
+            )}
           </div>
         </div>
       )}
