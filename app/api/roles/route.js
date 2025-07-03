@@ -5,10 +5,9 @@ let roles = [
 ];
 
 export async function GET(request) {
-  // If a role query param is provided, return its permissions
-  if (request && request.nextUrl && request.nextUrl.searchParams.has("role")) {
-    const roleValue = request.nextUrl.searchParams.get("role");
-    // Import roles with permissions
+  const { searchParams } = new URL(request.url);
+  if (searchParams.has("role")) {
+    const roleValue = searchParams.get("role");
     const { roles: rolesWithPerms } = await import("@/app/lib/roles");
     const found = rolesWithPerms.find((r) => r.value === roleValue);
     if (!found) {
