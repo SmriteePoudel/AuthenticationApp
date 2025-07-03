@@ -4,7 +4,20 @@ let roles = [
   { value: "manager", label: "Manager" },
 ];
 
-export async function GET() {
+export async function GET(request) {
+  // If a role query param is provided, return its permissions
+  if (request && request.nextUrl && request.nextUrl.searchParams.has("role")) {
+    const roleValue = request.nextUrl.searchParams.get("role");
+    // Import roles with permissions
+    const { roles: rolesWithPerms } = await import("@/app/lib/roles");
+    const found = rolesWithPerms.find((r) => r.value === roleValue);
+    if (!found) {
+      return new Response(JSON.stringify({ error: "Role not found" }), {
+        status: 404,
+      });
+    }
+    return Response.json(found.permissions || []);
+  }
   return Response.json(roles);
 }
 

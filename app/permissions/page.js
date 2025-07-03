@@ -3,6 +3,7 @@ import React, { useState, useEffect } from "react";
 import { FaEdit, FaTrash, FaSave } from "react-icons/fa";
 import { useRouter } from "next/navigation";
 import ConfirmModal from "@/app/components/ConfirmModal";
+import { roles as allRoles } from "@/app/lib/roles";
 
 export default function PermissionsPage() {
   const [permissions, setPermissions] = useState([]);

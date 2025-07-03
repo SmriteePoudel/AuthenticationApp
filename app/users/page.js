@@ -15,6 +15,7 @@ export default function UsersTable() {
     phone: "",
     roles: [],
   });
+  const [rolePermissions, setRolePermissions] = useState([]);
 
   const currentUserRoles = ["admin"];
 
@@ -32,6 +33,27 @@ export default function UsersTable() {
     fetchUsers();
     fetchRoles();
   }, []);
+
+  // Fetch permissions for selected roles
+  useEffect(() => {
+    const fetchPermissionsForRoles = async () => {
+      if (form.roles.length === 0) {
+        setRolePermissions([]);
+        return;
+      }
+      // Fetch permissions for each selected role and merge them
+      const permsSet = new Set();
+      for (const role of form.roles) {
+        const res = await fetch(`/api/roles?role=${role}`);
+        if (res.ok) {
+          const perms = await res.json();
+          perms.forEach((p) => permsSet.add(p));
+        }
+      }
+      setRolePermissions(Array.from(permsSet));
+    };
+    fetchPermissionsForRoles();
+  }, [form.roles]);
 
   const fetchUsers = async () => {
     const res = await fetch("/api/users");
@@ -121,6 +143,25 @@ export default function UsersTable() {
                   {Array.isArray(user.roles)
                     ? user.roles.join(", ")
                     : user.role || ""}
+                  <br />
+                  <span className="text-xs text-gray-300">
+                    {/* Permissions for the user's roles */}
+                    {Array.isArray(user.roles) && user.roles.length > 0 && (
+                      <>
+                        Permissions:{" "}
+                        {user.roles
+                          .map((role, idx) => {
+                            const found = allRoles.find(
+                              (r) => r.value === role
+                            );
+                            return found && found.permissions
+                              ? found.permissions.join(", ")
+                              : "";
+                          })
+                          .join(", ")}
+                      </>
+                    )}
+                  </span>
                 </td>
               </tr>
             ))
@@ -191,6 +232,27 @@ export default function UsersTable() {
                     ))}
                   </div>
                 </div>
+                {form.roles.length > 0 && (
+                  <div className="w-full mb-3">
+                    <label className="block mb-1 font-medium">
+                      Permissions for selected role(s):
+                    </label>
+                    <div className="flex flex-wrap gap-2">
+                      {rolePermissions.length > 0 ? (
+                        rolePermissions.map((perm) => (
+                          <span
+                            key={perm}
+                            className="bg-gray-200 text-black px-2 py-1 rounded text-xs"
+                          >
+                            {perm}
+                          </span>
+                        ))
+                      ) : (
+                        <span className="text-gray-500">No permissions</span>
+                      )}
+                    </div>
+                  </div>
+                )}
 
                 <div className="flex justify-end gap-2 mt-4">
                   <button
