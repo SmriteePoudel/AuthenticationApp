@@ -3,16 +3,43 @@ import React, { useState, useEffect } from "react";
 import { roles as initialRoles } from "@/app/lib/roles";
 
 export default function RolesPage() {
-  const [roles, setRoles] = useState(initialRoles);
+  const [roles, setRoles] = useState([]);
   const [showModal, setShowModal] = useState(false);
   const [form, setForm] = useState({ name: "", permissions: [] });
   const [allPermissions, setAllPermissions] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    fetchRoles();
     if (showModal) {
       fetchPermissions();
     }
   }, [showModal]);
+
+  const fetchRoles = async () => {
+    try {
+      setLoading(true);
+      const res = await fetch("/api/roles");
+      if (res.ok) {
+        const data = await res.json();
+
+        const uniqueRoles = data.reduce((acc, role) => {
+          if (!acc.find((r) => r.value === role.value)) {
+            acc.push(role);
+          }
+          return acc;
+        }, []);
+        setRoles(uniqueRoles);
+      } else {
+        setRoles(initialRoles);
+      }
+    } catch (error) {
+      console.error("Error fetching roles:", error);
+      setRoles(initialRoles);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const fetchPermissions = async () => {
     const res = await fetch("/api/permissions");
@@ -37,18 +64,30 @@ export default function RolesPage() {
     }));
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!form.name.trim()) return;
-    setRoles([
-      ...roles,
-      {
-        value: form.name.toLowerCase().replace(/\s+/g, "_"),
-        label: form.name,
-        permissions: form.permissions,
-      },
-    ]);
-    setForm({ name: "", permissions: [] });
-    setShowModal(false);
+
+    try {
+      const res = await fetch("/api/roles", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: form.name,
+          permissions: form.permissions,
+        }),
+      });
+
+      if (res.ok) {
+        await fetchRoles();
+        setForm({ name: "", permissions: [] });
+        setShowModal(false);
+      } else {
+        alert("Failed to create role");
+      }
+    } catch (error) {
+      console.error("Error creating role:", error);
+      alert("Error creating role");
+    }
   };
 
   const handleDelete = () => {
@@ -56,10 +95,18 @@ export default function RolesPage() {
     setShowModal(false);
   };
 
+  if (loading) {
+    return (
+      <div className="p-4">
+        <div className="text-center">Loading roles...</div>
+      </div>
+    );
+  }
+
   return (
     <div className="p-4">
       <div className="flex justify-between items-center mb-4">
-        <h2 className="text-xl font-bold"> title</h2>
+        <h2 className="text-xl font-bold">Roles Management</h2>
         <button
           className="bg-blue-600 text-black px-4 py-2 rounded hover:bg-blue-700"
           onClick={() => setShowModal(true)}
@@ -130,16 +177,24 @@ export default function RolesPage() {
           </tr>
         </thead>
         <tbody>
-          {roles.map((role) => (
-            <tr key={role.value}>
-              <td className="py-2 px-4 border font-semibold">{role.label}</td>
-              <td className="py-2 px-4 border text-center">
-                {role.permissions && role.permissions.length > 0
-                  ? role.permissions.join(", ")
-                  : "-"}
+          {roles.length === 0 ? (
+            <tr>
+              <td colSpan="2" className="py-4 px-4 border text-center">
+                No roles found
               </td>
             </tr>
-          ))}
+          ) : (
+            roles.map((role, index) => (
+              <tr key={`${role.value}-${role._id || index}`}>
+                <td className="py-2 px-4 border font-semibold">{role.label}</td>
+                <td className="py-2 px-4 border text-center">
+                  {role.permissions && role.permissions.length > 0
+                    ? role.permissions.join(", ")
+                    : "-"}
+                </td>
+              </tr>
+            ))
+          )}
         </tbody>
       </table>
     </div>

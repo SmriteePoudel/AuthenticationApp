@@ -1,15 +1,11 @@
-let roles = [
-  { value: "admin", label: "Admin" },
-  { value: "user", label: "User" },
-  { value: "manager", label: "Manager" },
-];
+import "@/app/lib/mongoose";
+import Role from "@/app/lib/models/Role";
 
 export async function GET(request) {
   const { searchParams } = new URL(request.url);
   if (searchParams.has("role")) {
     const roleValue = searchParams.get("role");
-    const { roles: rolesWithPerms } = await import("@/app/lib/roles");
-    const found = rolesWithPerms.find((r) => r.value === roleValue);
+    const found = await Role.findOne({ value: roleValue });
     if (!found) {
       return new Response(JSON.stringify({ error: "Role not found" }), {
         status: 404,
@@ -17,6 +13,7 @@ export async function GET(request) {
     }
     return Response.json(found.permissions || []);
   }
+  const roles = await Role.find();
   return Response.json(roles);
 }
 
@@ -29,8 +26,17 @@ export async function POST(request) {
   }
   const value = body.name.toLowerCase().replace(/\s+/g, "_");
   const label = body.name;
-  if (!roles.some((r) => r.value === value)) {
-    roles.push({ value, label });
+  const permissions = Array.isArray(body.permissions) ? body.permissions : [];
+  let role = await Role.findOne({ value });
+  if (!role) {
+    role = await Role.create({ value, label, permissions });
+  } else {
+    // Optionally update permissions if role already exists
+    role.permissions = permissions;
+    await role.save();
   }
-  return Response.json({ value, label }, { status: 201 });
+  return Response.json(
+    { value: role.value, label: role.label, permissions: role.permissions },
+    { status: 201 }
+  );
 }
