@@ -17,7 +17,25 @@ export default function UsersTable() {
   });
   const [rolePermissions, setRolePermissions] = useState([]);
 
-  const currentUserRoles = ["admin"];
+  let currentUserRoles = [];
+  if (typeof window !== "undefined") {
+    const userStr = localStorage.getItem("user");
+    if (userStr) {
+      try {
+        const user = JSON.parse(userStr);
+        console.log("DEBUG: user from localStorage", user);
+
+        if (Array.isArray(user.roles)) {
+          currentUserRoles = user.roles.map(
+            (r) => r.value || r.label || r._id || r
+          );
+        }
+        console.log("DEBUG: currentUserRoles", currentUserRoles);
+      } catch (e) {
+        currentUserRoles = [];
+      }
+    }
+  }
 
   const currentPermissions = Array.from(
     new Set(
@@ -81,10 +99,6 @@ export default function UsersTable() {
   };
 
   const handleAddUser = async () => {
-    if (!currentPermissions.includes("create")) {
-      setShowAccessDenied(true);
-      return;
-    }
     try {
       // Map selected role values to their ObjectIds
       const selectedRoleIds = roles
@@ -109,10 +123,6 @@ export default function UsersTable() {
       alert("An error occurred: " + error.message);
     }
   };
-
-  if (!currentPermissions.includes("read")) {
-    return <AccessDenied />;
-  }
 
   return (
     <div className="p-4">

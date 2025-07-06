@@ -10,7 +10,6 @@ export async function registerUser(email, password, name = null) {
 
   const hashed = await bcrypt.hash(password, 10);
 
-  // Generate a default name if not provided
   const userName = name || email.split("@")[0];
 
   const user = await User.create({

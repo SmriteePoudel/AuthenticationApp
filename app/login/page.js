@@ -28,6 +28,8 @@ export default function LoginPage() {
       }
 
       alert("Login successful");
+      // Store user info in localStorage
+      localStorage.setItem("user", JSON.stringify(data));
       router.push("/admin-dashboard");
     } catch (err) {
       setError("Something went wrong. Try again.");
