@@ -1,6 +1,6 @@
 import bcrypt from "bcryptjs";
 import "@/app/lib/mongoose";
-import User from "@/app/lib/models/User";
+import User from "@/app/lib/models/User.js";
 
 export async function registerUser(email, password, name = null) {
   const existing = await User.findOne({ email });
@@ -26,7 +26,7 @@ export async function registerUser(email, password, name = null) {
 }
 
 export async function authenticateUser(email, password) {
-  const user = await User.findOne({ email });
+  const user = await User.findOne({ email }).populate("roles");
   if (!user) {
     throw new Error("User not found");
   }
@@ -40,7 +40,6 @@ export async function authenticateUser(email, password) {
     throw new Error("Invalid credentials");
   }
 
-  // Update last login
   user.lastLogin = new Date();
   await user.save();
 

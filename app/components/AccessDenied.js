@@ -1,3 +1,4 @@
+"use client";
 import { useRouter } from "next/navigation";
 
 export default function AccessDenied() {
@@ -11,7 +12,7 @@ export default function AccessDenied() {
         </p>
         <button
           className="bg-white text-blue-600 px-4 py-2 rounded hover:bg-gray-200 font-semibold"
-          onClick={() => router.replace("/admin-dashboard")}
+          onClick={() => router.replace("/user-dashboard")}
         >
           Back to Dashboard
         </button>

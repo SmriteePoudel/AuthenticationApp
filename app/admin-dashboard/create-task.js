@@ -60,8 +60,8 @@ export default function CreateTaskPage() {
   };
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-screen bg-black text-white">
-      <h1 className="text-2xl font-bold mb-4">Create Project</h1>
+    <div className="flex flex-col items-center justify-center min-h-screen bg-gray-900 text-white">
+      <h1 className="text-2xl font-bold mb-4">Create Task</h1>
       <form
         onSubmit={handleSubmit}
         className="bg-gray-800 p-6 rounded shadow-md w-full max-w-md mb-8"
@@ -99,7 +99,7 @@ export default function CreateTaskPage() {
           <button
             type="button"
             className="bg-gray-600 px-6 py-2 rounded text-white font-bold hover:bg-gray-700"
-            onClick={() => router.push("/user-dashboard")}
+            onClick={() => router.push("/admin-dashboard")}
           >
             Back
           </button>

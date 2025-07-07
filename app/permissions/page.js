@@ -4,6 +4,7 @@ import { FaEdit, FaTrash, FaSave } from "react-icons/fa";
 import { useRouter } from "next/navigation";
 import ConfirmModal from "@/app/components/ConfirmModal";
 import { roles as allRoles } from "@/app/lib/roles";
+import AccessDenied from "../components/AccessDenied";
 
 export default function PermissionsPage() {
   const [permissions, setPermissions] = useState([]);
@@ -13,6 +14,7 @@ export default function PermissionsPage() {
   const [confirmType, setConfirmType] = useState(null);
   const [confirmIdx, setConfirmIdx] = useState(null);
   const router = useRouter();
+  const [isAdmin, setIsAdmin] = useState(null);
 
   const DEFAULT_PERMISSIONS = [
     "user.create",
@@ -20,6 +22,26 @@ export default function PermissionsPage() {
     "user.update",
     "user.delete",
   ];
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const user = JSON.parse(localStorage.getItem("user"));
+        if (
+          user &&
+          user.user &&
+          user.user.roles &&
+          user.user.roles.length > 0
+        ) {
+          if (user.user.roles.some((role) => role.value === "admin")) {
+            setIsAdmin(true);
+            return;
+          }
+        }
+      } catch {}
+    }
+    setIsAdmin(false);
+  }, []);
 
   useEffect(() => {
     fetchPermissions();
@@ -106,6 +128,9 @@ export default function PermissionsPage() {
     });
     await fetchPermissions();
   };
+
+  if (isAdmin === null) return null;
+  if (!isAdmin) return <AccessDenied />;
 
   return (
     <div className="max-w-2xl mx-auto mt-10 p-6 border rounded shadow">

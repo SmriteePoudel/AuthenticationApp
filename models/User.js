@@ -81,10 +81,9 @@ UserSchema.methods.hasAllPermissions = function (permissions) {
 };
 
 UserSchema.pre("save", function (next) {
-  // Ensure roles and permissions are always arrays
   if (!this.roles) this.roles = [];
   if (!this.permissions) this.permissions = [];
   next();
 });
 
-export default mongoose.models.User || mongoose.model("User", UserSchema);
+export default UserSchema;

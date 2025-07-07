@@ -28,9 +28,27 @@ export default function LoginPage() {
       }
 
       alert("Login successful");
-      // Store user info in localStorage
+
       localStorage.setItem("user", JSON.stringify(data));
-      router.push("/admin-dashboard");
+
+      if (typeof window !== "undefined") {
+        document.cookie = `user=${encodeURIComponent(
+          JSON.stringify(data)
+        )}; path=/; max-age=86400`;
+      }
+
+      let roles = [];
+      if (Array.isArray(data?.user?.roles)) {
+        roles = data.user.roles;
+      } else if (Array.isArray(data?.roles)) {
+        roles = data.roles;
+      }
+      console.log("Roles after login:", roles, "Raw data:", data);
+      if (roles.some((role) => role.value === "admin")) {
+        router.push("/admin-dashboard");
+      } else {
+        router.push("/user-dashboard");
+      }
     } catch (err) {
       setError("Something went wrong. Try again.");
     }

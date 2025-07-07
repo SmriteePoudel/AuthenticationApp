@@ -1,5 +1,5 @@
-const mongoose = require("mongoose");
-const Role = require("../app/lib/models/Role").default;
+import mongoose from "mongoose";
+import Role from "../app/lib/models/Role.js";
 
 const MONGODB_URI =
   process.env.MONGODB_URI || "mongodb://localhost:27017/my-auth-app";

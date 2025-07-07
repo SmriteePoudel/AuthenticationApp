@@ -68,6 +68,4 @@ RoleSchema.pre("save", function (next) {
   next();
 });
 
-export default mongoose.models && mongoose.models.Role
-  ? mongoose.models.Role
-  : mongoose.model("Role", RoleSchema);
+export default RoleSchema;

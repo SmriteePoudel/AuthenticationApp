@@ -8,6 +8,7 @@ export default function UsersTable() {
   const [roles, setRoles] = useState([]);
   const [showModal, setShowModal] = useState(false);
   const [showAccessDenied, setShowAccessDenied] = useState(false);
+  const [editingUser, setEditingUser] = useState(null);
   const [form, setForm] = useState({
     name: "",
     email: "",
@@ -16,6 +17,7 @@ export default function UsersTable() {
     roles: [],
   });
   const [rolePermissions, setRolePermissions] = useState([]);
+  const [isAdmin, setIsAdmin] = useState(null);
 
   let currentUserRoles = [];
   if (typeof window !== "undefined") {
@@ -81,6 +83,26 @@ export default function UsersTable() {
     fetchPermissionsForRoles();
   }, [form.roles]);
 
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const user = JSON.parse(localStorage.getItem("user"));
+        if (
+          user &&
+          user.user &&
+          user.user.roles &&
+          user.user.roles.length > 0
+        ) {
+          if (user.user.roles.some((role) => role.value === "admin")) {
+            setIsAdmin(true);
+            return;
+          }
+        }
+      } catch {}
+    }
+    setIsAdmin(false);
+  }, []);
+
   const fetchUsers = async () => {
     const res = await fetch("/api/users");
     const data = await res.json();
@@ -124,6 +146,112 @@ export default function UsersTable() {
     }
   };
 
+  const handleEditUser = (user) => {
+    console.log("Editing user:", user);
+    setEditingUser({
+      _id: user._id,
+      name: user.name || "",
+      email: user.email || "",
+      phone: user.phone || "",
+      roles: Array.isArray(user.roles)
+        ? user.roles.map((role) => role._id || role).filter(Boolean)
+        : [],
+    });
+    console.log("Set editing user to:", {
+      _id: user._id,
+      name: user.name || "",
+      email: user.email || "",
+      phone: user.phone || "",
+      roles: Array.isArray(user.roles)
+        ? user.roles.map((role) => role._id || role).filter(Boolean)
+        : [],
+    });
+  };
+
+  const handleSaveEdit = async () => {
+    try {
+      if (!editingUser.name || editingUser.name.trim().length < 2) {
+        alert("Name must be at least 2 characters long");
+        return;
+      }
+
+      if (!editingUser.email || editingUser.email.trim() === "") {
+        alert("Email is required");
+        return;
+      }
+
+      const emailRegex = /^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/;
+      if (!emailRegex.test(editingUser.email)) {
+        alert("Please enter a valid email address");
+        return;
+      }
+
+      // Prepare the data to send
+      const updateData = {
+        userId: editingUser._id,
+        name: editingUser.name.trim(),
+        email: editingUser.email.trim(),
+        phone: editingUser.phone ? editingUser.phone.trim() : "",
+        roles: Array.isArray(editingUser.roles) ? editingUser.roles : [],
+      };
+
+      console.log("Sending update data:", updateData);
+
+      const res = await fetch("/api/users", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(updateData),
+      });
+
+      const responseData = await res.json();
+      console.log("Update response:", responseData);
+
+      if (!res.ok) {
+        alert(
+          "Failed to update user: " + (responseData.error || res.statusText)
+        );
+        return;
+      }
+
+      await fetchUsers();
+      setEditingUser(null);
+    } catch (error) {
+      console.error("Error updating user:", error);
+      alert("An error occurred: " + error.message);
+    }
+  };
+
+  const handleCancelEdit = () => {
+    setEditingUser(null);
+  };
+
+  const handleDeleteUser = async (userId) => {
+    if (!confirm("Are you sure you want to delete this user?")) {
+      return;
+    }
+
+    try {
+      const res = await fetch(`/api/users?userId=${userId}`, {
+        method: "DELETE",
+      });
+
+      if (!res.ok) {
+        const errorData = await res.json();
+        alert("Failed to delete user: " + (errorData.error || res.statusText));
+        return;
+      }
+
+      await fetchUsers();
+    } catch (error) {
+      alert("An error occurred: " + error.message);
+    }
+  };
+
+  const isEditing = (userId) => editingUser && editingUser._id === userId;
+
+  if (isAdmin === null) return null;
+  if (!isAdmin) return <AccessDenied />;
+
   return (
     <div className="p-4">
       <div className="flex justify-between items-center mb-4">
@@ -145,12 +273,13 @@ export default function UsersTable() {
             <th className="py-2 px-4 border">Phone</th>
             <th className="py-2 px-4 border">Roles</th>
             <th className="py-2 px-4 border">Permissions</th>
+            <th className="py-2 px-4 border">Actions</th>
           </tr>
         </thead>
         <tbody>
           {users.length === 0 ? (
             <tr>
-              <td colSpan="6" className="text-center py-4">
+              <td colSpan="7" className="text-center py-4">
                 No users found
               </td>
             </tr>
@@ -158,11 +287,85 @@ export default function UsersTable() {
             users.map((user, index) => (
               <tr key={user._id}>
                 <td className="py-2 px-4 border">{index + 1}</td>
-                <td className="py-2 px-4 border">{user.name}</td>
-                <td className="py-2 px-4 border">{user.email}</td>
-                <td className="py-2 px-4 border">{user.phone}</td>
                 <td className="py-2 px-4 border">
-                  {Array.isArray(user.roles) && user.roles.length > 0 ? (
+                  {isEditing(user._id) ? (
+                    <input
+                      type="text"
+                      value={editingUser.name}
+                      onChange={(e) =>
+                        setEditingUser({ ...editingUser, name: e.target.value })
+                      }
+                      className="w-full p-1 text-black rounded"
+                    />
+                  ) : (
+                    user.name
+                  )}
+                </td>
+                <td className="py-2 px-4 border">
+                  {isEditing(user._id) ? (
+                    <input
+                      type="email"
+                      value={editingUser.email}
+                      onChange={(e) =>
+                        setEditingUser({
+                          ...editingUser,
+                          email: e.target.value,
+                        })
+                      }
+                      className="w-full p-1 text-black rounded"
+                    />
+                  ) : (
+                    user.email
+                  )}
+                </td>
+                <td className="py-2 px-4 border">
+                  {isEditing(user._id) ? (
+                    <input
+                      type="text"
+                      value={editingUser.phone}
+                      onChange={(e) =>
+                        setEditingUser({
+                          ...editingUser,
+                          phone: e.target.value,
+                        })
+                      }
+                      className="w-full p-1 text-black rounded"
+                    />
+                  ) : (
+                    user.phone
+                  )}
+                </td>
+                <td className="py-2 px-4 border">
+                  {isEditing(user._id) ? (
+                    <div className="flex flex-wrap gap-1">
+                      {roles.map((role) => (
+                        <label
+                          key={role._id}
+                          className="flex items-center gap-1 text-white text-xs"
+                        >
+                          <input
+                            type="checkbox"
+                            checked={editingUser.roles.includes(role._id)}
+                            onChange={(e) => {
+                              let updatedRoles;
+                              if (e.target.checked) {
+                                updatedRoles = [...editingUser.roles, role._id];
+                              } else {
+                                updatedRoles = editingUser.roles.filter(
+                                  (r) => r !== role._id
+                                );
+                              }
+                              setEditingUser({
+                                ...editingUser,
+                                roles: updatedRoles,
+                              });
+                            }}
+                          />
+                          {role.label}
+                        </label>
+                      ))}
+                    </div>
+                  ) : Array.isArray(user.roles) && user.roles.length > 0 ? (
                     user.roles.map((role) => (
                       <span
                         key={role._id || role}
@@ -180,6 +383,39 @@ export default function UsersTable() {
                   user.permissions.length > 0
                     ? user.permissions.join(", ")
                     : "-"}
+                </td>
+                <td className="py-2 px-4 border">
+                  {isEditing(user._id) ? (
+                    <div className="flex gap-2">
+                      <button
+                        onClick={handleSaveEdit}
+                        className="bg-green-500 text-white px-2 py-1 rounded text-xs hover:bg-green-600"
+                      >
+                        Save
+                      </button>
+                      <button
+                        onClick={handleCancelEdit}
+                        className="bg-gray-500 text-white px-2 py-1 rounded text-xs hover:bg-gray-600"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => handleEditUser(user)}
+                        className="bg-blue-500 text-white px-2 py-1 rounded text-xs hover:bg-blue-600"
+                      >
+                        Edit
+                      </button>
+                      <button
+                        onClick={() => handleDeleteUser(user._id)}
+                        className="bg-red-500 text-white px-2 py-1 rounded text-xs hover:bg-red-600"
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  )}
                 </td>
               </tr>
             ))
