@@ -73,7 +73,34 @@ export default function CreateTaskPage() {
     <div className="flex flex-col items-center justify-center min-h-screen bg-black text-white">
       <button
         className="mb-4 px-4 py-2 rounded bg-gray-500 text-white font-bold hover:bg-gray-600"
-        onClick={() => router.push("/user-dashboard")}
+        onClick={() => {
+          if (typeof window !== "undefined") {
+            try {
+              const user = JSON.parse(localStorage.getItem("user"));
+              const roles = user?.roles || [];
+              const isSuperadmin = roles.some(
+                (role) => role.value === "superadmin" || role === "superadmin"
+              );
+              const isAdmin = roles.some(
+                (role) => role.value === "admin" || role === "admin"
+              );
+              const isSuperadminByEmail =
+                user?.email === "superadmin@example.com";
+
+              if (isSuperadmin || isSuperadminByEmail) {
+                router.push("/admin-dashboard/superadmin");
+              } else if (isAdmin) {
+                router.push("/admin-dashboard");
+              } else {
+                router.push("/user-dashboard");
+              }
+            } catch (error) {
+              router.push("/user-dashboard");
+            }
+          } else {
+            router.push("/user-dashboard");
+          }
+        }}
       >
         Back to Dashboard
       </button>

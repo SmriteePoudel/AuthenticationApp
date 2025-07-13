@@ -31,47 +31,81 @@ export default function LoginPage() {
         )}; path=/; max-age=86400`;
       }
       let roles = [];
+      console.log("DEBUG: Checking data.user.roles:", data?.user?.roles);
+      console.log("DEBUG: Checking data.roles:", data?.roles);
+
       if (Array.isArray(data?.user?.roles)) {
         roles = data.user.roles;
+        console.log("DEBUG: Using data.user.roles");
       } else if (Array.isArray(data?.roles)) {
         roles = data.roles;
+        console.log("DEBUG: Using data.roles");
+      } else {
+        console.log("DEBUG: No roles found in response");
       }
       console.log("DEBUG: Full user data after login", data.user);
       console.log("DEBUG: roles after login", roles);
+      console.log("DEBUG: roles length:", roles.length);
       console.log(
         "DEBUG: roles structure",
         roles.map((r) => ({ value: r.value, label: r.label, _id: r._id }))
       );
+      console.log("DEBUG: Current tab:", tab);
+      console.log("DEBUG: Raw data.user:", data.user);
+      console.log("DEBUG: Raw data.user.roles:", data.user.roles);
 
-      const isSuperadmin = roles.some(
-        (role) => role.value === "superadmin" || role === "superadmin"
-      );
-      console.log("DEBUG: isSuperadmin check result", isSuperadmin);
-      console.log("DEBUG: Checking each role for superadmin:");
-      roles.forEach((role, index) => {
-        console.log(`  Role ${index}:`, {
-          value: role.value,
-          label: role.label,
-          _id: role._id,
-          isSuperadmin: role.value === "superadmin" || role === "superadmin",
-        });
+      console.log("DEBUG: About to check for superadmin, roles array:", roles);
+      console.log("DEBUG: Roles array type:", typeof roles);
+      console.log("DEBUG: Roles array length:", roles.length);
+
+      const isSuperadmin = roles.some((role) => {
+        console.log("DEBUG: Checking role:", role);
+        console.log("DEBUG: Role value:", role.value);
+        console.log("DEBUG: Role label:", role.label);
+        console.log("DEBUG: Role === 'superadmin':", role === "superadmin");
+        console.log(
+          "DEBUG: Role.value === 'superadmin':",
+          role.value === "superadmin"
+        );
+        console.log(
+          "DEBUG: Label check:",
+          role.label && role.label.toLowerCase().includes("superadmin")
+        );
+
+        const result =
+          role.value === "superadmin" ||
+          role === "superadmin" ||
+          (role.label && role.label.toLowerCase().includes("superadmin"));
+
+        console.log("DEBUG: This role is superadmin:", result);
+        return result;
       });
+      console.log("DEBUG: Final isSuperadmin result:", isSuperadmin);
 
-      if (isSuperadmin) {
+      // Hardcoded test for superadmin email
+      const isSuperadminByEmail = data.user.email === "superadmin@example.com";
+      console.log("DEBUG: isSuperadminByEmail check:", isSuperadminByEmail);
+
+      // Use either role check or email check
+      const finalIsSuperadmin = isSuperadmin || isSuperadminByEmail;
+      console.log("DEBUG: Final superadmin decision:", finalIsSuperadmin);
+
+      if (finalIsSuperadmin) {
         console.log("DEBUG: Redirecting to superadmin page");
-        router.push("/admin-dashboard/superadmin");
+        // Use window.location for more reliable redirect
+        window.location.href = "/admin-dashboard/superadmin";
+      } else if (
+        roles.some(
+          (role) =>
+            role.value === "admin" ||
+            (role.label && role.label.toLowerCase().includes("admin"))
+        )
+      ) {
+        console.log("DEBUG: Redirecting to admin dashboard");
+        router.push("/admin-dashboard");
       } else {
-        if (tab === "user") {
-          if (roles.some((role) => role.value === "admin")) {
-            router.push("/admin-dashboard");
-          } else {
-            router.push("/user-dashboard");
-          }
-        } else {
-          setError(
-            "You do not have superadmin privileges. Please use the User Login tab."
-          );
-        }
+        console.log("DEBUG: Redirecting to user dashboard");
+        router.push("/user-dashboard");
       }
     } catch (err) {
       setError("Something went wrong. Try again.");

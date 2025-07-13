@@ -12,7 +12,7 @@ const MONGODB_URI =
 
 async function seedRolesAndUsers() {
   await mongoose.connect(MONGODB_URI);
-  // Seed roles
+
   for (const role of allRoles) {
     let r = await Role.findOne({ value: role.value });
     if (!r) {
@@ -25,7 +25,7 @@ async function seedRolesAndUsers() {
       console.log(`Updated role: ${role.label}`);
     }
   }
-  // Seed superadmin user
+
   const superadminEmail = "superadmin@example.com";
   let superadminRole = await Role.findOne({ value: "superadmin" });
   let superadmin = await User.findOne({ email: superadminEmail });
@@ -47,7 +47,7 @@ async function seedRolesAndUsers() {
     await superadmin.save();
     console.log("Superadmin user updated.");
   }
-  // Seed regular user
+
   const userEmail = "user@example.com";
   let userRole = await Role.findOne({ value: "user" });
   let user = await User.findOne({ email: userEmail });

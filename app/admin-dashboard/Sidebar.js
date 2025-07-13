@@ -4,7 +4,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
 const navItems = [
-  { label: "Home (Admin)", href: "/" },
+  { label: "Home (Admin)", href: "/admin-dashboard" },
   { label: "Projects", href: "/projects" },
   { label: "Settings", href: "/settings" },
   { label: "Roles", href: "/roles" },

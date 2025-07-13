@@ -9,7 +9,10 @@ export async function POST(request) {
   try {
     await db;
 
-    const populatedUser = await User.findOne({ email }).populate("roles");
+    const populatedUser = await User.findOne({ email }).populate({
+      path: "roles",
+      select: "value label permissions",
+    });
     if (!populatedUser) {
       return Response.json({ message: "User not found" }, { status: 401 });
     }
@@ -28,6 +31,7 @@ export async function POST(request) {
 
     let permissions = populatedUser.permissions || [];
     const { permissions: allPermissions } = await import("../../lib/roles.js");
+
     if ((!permissions || permissions.length === 0) && populatedUser.roles) {
       if (populatedUser.roles.some((r) => r.value === "superadmin")) {
         permissions = [...allPermissions];
@@ -37,13 +41,39 @@ export async function POST(request) {
         );
       }
     }
+
+    if (
+      (!populatedUser.permissions || populatedUser.permissions.length === 0) &&
+      populatedUser.roles
+    ) {
+      if (populatedUser.roles.some((r) => r.value === "superadmin")) {
+        populatedUser.permissions = [...allPermissions];
+      } else {
+        populatedUser.permissions = Array.from(
+          new Set(populatedUser.roles.flatMap((r) => r.permissions || []))
+        );
+      }
+      await populatedUser.save();
+    }
     const userResponse = { ...populatedUser.toObject(), permissions };
     console.log("DEBUG: Login API - User response:", {
       _id: userResponse._id,
       email: userResponse.email,
       roles: userResponse.roles,
+      rolesLength: userResponse.roles ? userResponse.roles.length : 0,
       permissions: userResponse.permissions,
+      permissionsLength: userResponse.permissions
+        ? userResponse.permissions.length
+        : 0,
     });
+    console.log(
+      "DEBUG: Login API - Roles details:",
+      userResponse.roles?.map((r) => ({
+        _id: r._id,
+        value: r.value,
+        label: r.label,
+      }))
+    );
 
     return Response.json({
       message: "Login successful",
