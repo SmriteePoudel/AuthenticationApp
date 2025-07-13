@@ -57,7 +57,6 @@ async function createAdminUser() {
     return;
   }
 
-  // Use bcrypt to hash the password
   const bcrypt = await import("bcryptjs");
   const hashed = await bcrypt.default.hash(password, 10);
 

@@ -17,7 +17,7 @@ export default function UsersTable() {
     roles: [],
   });
   const [rolePermissions, setRolePermissions] = useState([]);
-  const [isAdmin, setIsAdmin] = useState(null);
+  const [isSuperadmin, setIsSuperadmin] = useState(false);
 
   let currentUserRoles = [];
   if (typeof window !== "undefined") {
@@ -87,20 +87,18 @@ export default function UsersTable() {
     if (typeof window !== "undefined") {
       try {
         const user = JSON.parse(localStorage.getItem("user"));
+        const roles = user?.roles || [];
         if (
-          user &&
-          user.user &&
-          user.user.roles &&
-          user.user.roles.length > 0
+          roles.some(
+            (role) => role.value === "superadmin" || role === "superadmin"
+          )
         ) {
-          if (user.user.roles.some((role) => role.value === "admin")) {
-            setIsAdmin(true);
-            return;
-          }
+          setIsSuperadmin(true);
+          return;
         }
       } catch {}
     }
-    setIsAdmin(false);
+    setIsSuperadmin(false);
   }, []);
 
   const fetchUsers = async () => {
@@ -249,16 +247,19 @@ export default function UsersTable() {
 
   const isEditing = (userId) => editingUser && editingUser._id === userId;
 
-  if (isAdmin === null) return null;
-  if (!isAdmin) return <AccessDenied />;
-
   return (
     <div className="p-4">
+      <button
+        className="mb-4 px-4 py-2 rounded bg-gray-500 text-white font-bold hover:bg-gray-600"
+        onClick={() => router.push("/user-dashboard")}
+      >
+        Back to Dashboard
+      </button>
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-xl font-bold">Users</h2>
         <button
           onClick={handleOpenModal}
-          className="bg-blue-500 text-black px-4 py-2 rounded"
+          className="px-4 py-2 rounded bg-blue-500 text-black hover:bg-blue-600 cursor-pointer"
         >
           + Add User
         </button>
@@ -385,36 +386,40 @@ export default function UsersTable() {
                     : "-"}
                 </td>
                 <td className="py-2 px-4 border">
-                  {isEditing(user._id) ? (
-                    <div className="flex gap-2">
-                      <button
-                        onClick={handleSaveEdit}
-                        className="bg-green-500 text-white px-2 py-1 rounded text-xs hover:bg-green-600"
-                      >
-                        Save
-                      </button>
-                      <button
-                        onClick={handleCancelEdit}
-                        className="bg-gray-500 text-white px-2 py-1 rounded text-xs hover:bg-gray-600"
-                      >
-                        Cancel
-                      </button>
-                    </div>
+                  {isSuperadmin ? (
+                    isEditing(user._id) ? (
+                      <div className="flex gap-2">
+                        <button
+                          onClick={handleSaveEdit}
+                          className="bg-green-500 text-white px-2 py-1 rounded text-xs hover:bg-green-600"
+                        >
+                          Save
+                        </button>
+                        <button
+                          onClick={handleCancelEdit}
+                          className="bg-gray-500 text-white px-2 py-1 rounded text-xs hover:bg-gray-600"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    ) : (
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => handleEditUser(user)}
+                          className="bg-blue-500 text-white px-2 py-1 rounded text-xs hover:bg-blue-600"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          onClick={() => handleDeleteUser(user._id)}
+                          className="bg-red-500 text-white px-2 py-1 rounded text-xs hover:bg-red-600"
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    )
                   ) : (
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => handleEditUser(user)}
-                        className="bg-blue-500 text-white px-2 py-1 rounded text-xs hover:bg-blue-600"
-                      >
-                        Edit
-                      </button>
-                      <button
-                        onClick={() => handleDeleteUser(user._id)}
-                        className="bg-red-500 text-white px-2 py-1 rounded text-xs hover:bg-red-600"
-                      >
-                        Delete
-                      </button>
-                    </div>
+                    <span className="text-gray-400">No permissions</span>
                   )}
                 </td>
               </tr>
@@ -543,6 +548,12 @@ export default function UsersTable() {
                     className="px-6 py-2 rounded bg-green-500 text-white font-bold hover:bg-green-600"
                   >
                     Save
+                  </button>
+                  <button
+                    onClick={() => router.push("/user-dashboard")}
+                    className="px-6 py-2 rounded bg-gray-500 text-white font-bold hover:bg-gray-600"
+                  >
+                    Back to First Page
                   </button>
                 </div>
               </>

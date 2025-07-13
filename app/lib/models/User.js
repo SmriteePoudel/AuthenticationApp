@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import { roles as allRoles, permissions as allPermissions } from "../roles.js";
 
 const UserSchema = new mongoose.Schema(
   {
@@ -56,9 +57,7 @@ const UserSchema = new mongoose.Schema(
   }
 );
 
-UserSchema.index({ email: 1 });
 UserSchema.index({ roles: 1 });
-UserSchema.index({ isActive: 1 });
 
 UserSchema.virtual("allPermissions").get(function () {
   return this.permissions || [];
@@ -80,10 +79,32 @@ UserSchema.methods.hasAllPermissions = function (permissions) {
   );
 };
 
-UserSchema.pre("save", function (next) {
+UserSchema.pre("save", async function (next) {
   // Ensure roles and permissions are always arrays
   if (!this.roles) this.roles = [];
   if (!this.permissions) this.permissions = [];
+
+  // Synchronize permissions from roles
+  if (this.roles.length > 0) {
+    // Find role objects by value or _id
+    let userRoles = [];
+    if (typeof this.roles[0] === "object" && this.roles[0].value) {
+      userRoles = this.roles;
+    } else {
+      // Try to match by value or _id
+      userRoles = allRoles.filter(
+        (r) => this.roles.includes(r.value) || this.roles.includes(r._id)
+      );
+    }
+    // If user has superadmin, give all permissions
+    if (userRoles.some((r) => r.value === "superadmin")) {
+      this.permissions = [...allPermissions];
+    } else {
+      this.permissions = Array.from(
+        new Set(userRoles.flatMap((r) => r.permissions || []))
+      );
+    }
+  }
   next();
 });
 

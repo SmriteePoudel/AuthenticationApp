@@ -17,8 +17,22 @@ export default function UserDashboard() {
   const router = useRouter();
   useEffect(() => {
     if (typeof window !== "undefined") {
-      const user = JSON.parse(localStorage.getItem("user"));
-      const roles = user?.user?.roles || user?.roles || [];
+      const user = localStorage.getItem("user");
+      if (!user) {
+        router.replace("/login");
+        return;
+      }
+      const parsed = JSON.parse(user);
+      const roles = parsed?.roles || [];
+      console.log("DEBUG: roles in user-dashboard", roles);
+      if (
+        roles.some(
+          (role) => role.value === "superadmin" || role === "superadmin"
+        )
+      ) {
+        router.replace("/admin-dashboard/superadmin");
+        return;
+      }
       if (roles.some((role) => role.value === "admin")) {
         router.replace("/admin-dashboard");
       }

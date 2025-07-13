@@ -4,10 +4,7 @@ const MONGODB_URI =
   process.env.MONGODB_URI || "mongodb://localhost:27017/my-auth-app";
 
 if (!global._mongoose) {
-  global._mongoose = mongoose.connect(MONGODB_URI, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
-  });
+  global._mongoose = mongoose.connect(MONGODB_URI);
 }
 
 export default await global._mongoose;

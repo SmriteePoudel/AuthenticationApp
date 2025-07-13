@@ -7,9 +7,9 @@ const MONGODB_URI =
 async function createSuperAdminUser() {
   await mongoose.connect(MONGODB_URI);
 
-  const email = "superadmin@example.com";
-  const password = "superadmin123";
-  const name = "Super Admin";
+  const email = "admin@example.com";
+  const password = "admin123";
+  const name = " Admin";
   const phone = "1234567890";
 
   let user = await User.findOne({ email });

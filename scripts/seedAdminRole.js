@@ -5,10 +5,7 @@ const MONGODB_URI =
   process.env.MONGODB_URI || "mongodb://localhost:27017/my-auth-app";
 
 async function seedAdminRole() {
-  await mongoose.connect(MONGODB_URI, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
-  });
+  await mongoose.connect(MONGODB_URI);
 
   let admin = await Role.findOne({ value: "admin" });
   if (!admin) {
@@ -26,7 +23,4 @@ async function seedAdminRole() {
   await mongoose.disconnect();
 }
 
-seedAdminRole().catch((err) => {
-  console.error(err);
-  process.exit(1);
-});
+seedAdminRole().catch(console.error);

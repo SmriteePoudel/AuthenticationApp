@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from "react";
 import { roles as initialRoles } from "@/app/lib/roles";
 import AccessDenied from "../components/AccessDenied";
+import { useRouter } from "next/navigation";
 
 export default function RolesPage() {
   const [roles, setRoles] = useState([]);
@@ -10,27 +11,29 @@ export default function RolesPage() {
   const [form, setForm] = useState({ name: "", permissions: [] });
   const [allPermissions, setAllPermissions] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [isAdmin, setIsAdmin] = useState(null);
-
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      try {
-        const user = JSON.parse(localStorage.getItem("user"));
-        const roles = user?.user?.roles || user?.roles || [];
-        if (roles.some((role) => role.value === "admin")) {
-          setIsAdmin(true);
-          return;
-        }
-      } catch {}
-    }
-    setIsAdmin(false);
-  }, []);
+  const [isSuperadmin, setIsSuperadmin] = useState(false);
+  const router = useRouter();
 
   useEffect(() => {
     fetchRoles();
     if (showModal) {
       fetchPermissions();
     }
+    if (typeof window !== "undefined") {
+      try {
+        const user = JSON.parse(localStorage.getItem("user"));
+        const roles = user?.roles || [];
+        if (
+          roles.some(
+            (role) => role.value === "superadmin" || role === "superadmin"
+          )
+        ) {
+          setIsSuperadmin(true);
+          return;
+        }
+      } catch {}
+    }
+    setIsSuperadmin(false);
   }, [showModal]);
 
   const fetchRoles = async () => {
@@ -195,9 +198,6 @@ export default function RolesPage() {
 
   const isEditing = (roleId) => editingRole && editingRole._id === roleId;
 
-  if (isAdmin === null) return null;
-  if (!isAdmin) return <AccessDenied />;
-
   if (loading) {
     return (
       <div className="p-4">
@@ -208,14 +208,22 @@ export default function RolesPage() {
 
   return (
     <div className="p-4">
+      <button
+        className="mb-4 px-4 py-2 rounded bg-gray-500 text-white font-bold hover:bg-gray-600"
+        onClick={() => router.push("/user-dashboard")}
+      >
+        Back to Dashboard
+      </button>
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-xl font-bold">Roles Management</h2>
-        <button
-          className="bg-blue-600 text-black px-4 py-2 rounded hover:bg-blue-700"
-          onClick={() => setShowModal(true)}
-        >
-          Add New Role
-        </button>
+        {isSuperadmin && (
+          <button
+            className="bg-blue-600 text-black px-4 py-2 rounded hover:bg-blue-700"
+            onClick={() => setShowModal(true)}
+          >
+            Add New Role
+          </button>
+        )}
       </div>
 
       {showModal && (
@@ -333,9 +341,9 @@ export default function RolesPage() {
       <table className="min-w-full bg-gray-700 border border-black mt-4">
         <thead className="bg-blue-700">
           <tr>
-            <th className="py-2 px-4 border">Role</th>
-            <th className="py-2 px-4 border">Permissions</th>
-            <th className="py-2 px-4 border">Actions</th>
+            <th className="py-2 px-4 border text-left">Role</th>
+            <th className="py-2 px-4 border text-left">Permissions</th>
+            <th className="py-2 px-4 border text-right">Actions</th>
           </tr>
         </thead>
         <tbody>
@@ -347,8 +355,11 @@ export default function RolesPage() {
             </tr>
           ) : (
             roles.map((role, index) => (
-              <tr key={`${role.value}-${role._id || index}`}>
-                <td className="py-2 px-4 border font-semibold">
+              <tr
+                key={`${role.value}-${role._id || index}`}
+                className="hover:bg-gray-600"
+              >
+                <td className="py-2 px-4 border font-semibold text-left">
                   {isEditing(role._id) ? (
                     <input
                       type="text"
@@ -362,7 +373,7 @@ export default function RolesPage() {
                     role.label
                   )}
                 </td>
-                <td className="py-2 px-4 border text-center">
+                <td className="py-2 px-4 border text-left text-sm">
                   {isEditing(role._id) ? (
                     <div className="text-xs">
                       {editingRole.permissions.length > 0
@@ -375,9 +386,9 @@ export default function RolesPage() {
                     "-"
                   )}
                 </td>
-                <td className="py-2 px-4 border">
+                <td className="py-2 px-4 border text-right">
                   {isEditing(role._id) ? (
-                    <div className="flex gap-2">
+                    <div className="flex gap-2 justify-end">
                       <button
                         onClick={handleSaveEdit}
                         className="bg-green-500 text-white px-2 py-1 rounded text-xs hover:bg-green-600"
@@ -392,7 +403,7 @@ export default function RolesPage() {
                       </button>
                     </div>
                   ) : (
-                    <div className="flex gap-2">
+                    <div className="flex gap-2 justify-end">
                       <button
                         onClick={() => handleEditRole(role)}
                         className="bg-blue-500 text-white px-2 py-1 rounded text-xs hover:bg-blue-600"

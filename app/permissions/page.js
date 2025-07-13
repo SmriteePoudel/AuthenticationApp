@@ -4,7 +4,6 @@ import { FaEdit, FaTrash, FaSave } from "react-icons/fa";
 import { useRouter } from "next/navigation";
 import ConfirmModal from "@/app/components/ConfirmModal";
 import { roles as allRoles } from "@/app/lib/roles";
-import AccessDenied from "../components/AccessDenied";
 
 export default function PermissionsPage() {
   const [permissions, setPermissions] = useState([]);
@@ -13,8 +12,8 @@ export default function PermissionsPage() {
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [confirmType, setConfirmType] = useState(null);
   const [confirmIdx, setConfirmIdx] = useState(null);
+  const [isSuperadmin, setIsSuperadmin] = useState(false);
   const router = useRouter();
-  const [isAdmin, setIsAdmin] = useState(null);
 
   const DEFAULT_PERMISSIONS = [
     "user.create",
@@ -24,27 +23,22 @@ export default function PermissionsPage() {
   ];
 
   useEffect(() => {
+    fetchPermissions();
     if (typeof window !== "undefined") {
       try {
         const user = JSON.parse(localStorage.getItem("user"));
+        const roles = user?.roles || [];
         if (
-          user &&
-          user.user &&
-          user.user.roles &&
-          user.user.roles.length > 0
+          roles.some(
+            (role) => role.value === "superadmin" || role === "superadmin"
+          )
         ) {
-          if (user.user.roles.some((role) => role.value === "admin")) {
-            setIsAdmin(true);
-            return;
-          }
+          setIsSuperadmin(true);
+          return;
         }
       } catch {}
     }
-    setIsAdmin(false);
-  }, []);
-
-  useEffect(() => {
-    fetchPermissions();
+    setIsSuperadmin(false);
   }, []);
 
   const fetchPermissions = async () => {
@@ -129,19 +123,30 @@ export default function PermissionsPage() {
     await fetchPermissions();
   };
 
-  if (isAdmin === null) return null;
-  if (!isAdmin) return <AccessDenied />;
-
   return (
     <div className="max-w-2xl mx-auto mt-10 p-6 border rounded shadow">
+      <button
+        className="mb-4 px-4 py-2 rounded bg-gray-500 text-white font-bold hover:bg-gray-600"
+        onClick={() => router.push("/user-dashboard")}
+      >
+        Back to Dashboard
+      </button>
       <h1 className="text-2xl font-bold mb-4">Permissions</h1>
       <p className="text-m font-sans mb-6">Here is a list of permissions</p>
-      <button
-        className="mb-4 bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
-        onClick={() => router.push("/permissions/add")}
-      >
-        + Add New Permission
-      </button>
+      {isSuperadmin ? (
+        <>
+          <button
+            className="mb-4 bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+            onClick={() => router.push("/permissions/add")}
+          >
+            + Add New Permission
+          </button>
+        </>
+      ) : (
+        <p className="text-red-500 mb-4">
+          Only superadmin can add new permissions
+        </p>
+      )}
       <table className="min-w-full table-fixed bg-black border border-gray-700 rounded">
         <thead>
           <tr>

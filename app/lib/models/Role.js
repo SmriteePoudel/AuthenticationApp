@@ -42,7 +42,6 @@ const RoleSchema = new mongoose.Schema(
   }
 );
 
-RoleSchema.index({ value: 1 });
 RoleSchema.index({ isActive: 1 });
 
 RoleSchema.methods.hasPermission = function (permission) {

@@ -1,4 +1,4 @@
-import { roles } from "@/app/lib/roles";
+import { roles } from "@/app/lib/roles.js";
 import { users } from "@/app/lib/db";
 
 function getPermissionsForRoles(userRoles) {

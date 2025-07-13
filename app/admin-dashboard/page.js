@@ -8,7 +8,7 @@ export default function AdminDashboard() {
   useEffect(() => {
     if (typeof window !== "undefined") {
       const user = JSON.parse(localStorage.getItem("user"));
-      const roles = user?.user?.roles || user?.roles || [];
+      const roles = user?.roles || [];
       if (!roles.some((role) => role.value === "admin")) {
         router.replace("/user-dashboard");
       }

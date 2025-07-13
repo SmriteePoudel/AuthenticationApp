@@ -17,8 +17,9 @@ function getUserRole() {
   if (typeof window === "undefined") return null;
   try {
     const user = JSON.parse(localStorage.getItem("user"));
-    const roles = user?.user?.roles || user?.roles || [];
+    const roles = user?.roles || [];
     if (roles.some((role) => role.value === "admin")) return "admin";
+    if (roles.some((role) => role.value === "superadmin")) return "superadmin";
     return "user";
   } catch {
     return null;
@@ -48,6 +49,11 @@ export default function Sidebar() {
     filteredNavItems = navItems.filter(
       (item) => item.label === "Projects" || item.label === "Logout"
     );
+  } else if (role === "admin" || role === "superadmin") {
+    filteredNavItems = [
+      ...filteredNavItems,
+      { label: "Superadmin Panel", href: "/admin-dashboard/superadmin" },
+    ];
   }
 
   return (

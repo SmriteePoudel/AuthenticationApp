@@ -56,9 +56,7 @@ const UserSchema = new mongoose.Schema(
   }
 );
 
-UserSchema.index({ email: 1 });
 UserSchema.index({ roles: 1 });
-UserSchema.index({ isActive: 1 });
 
 UserSchema.virtual("allPermissions").get(function () {
   return this.permissions || [];

@@ -13,7 +13,7 @@ export default function Navbar() {
     if (typeof window !== "undefined") {
       try {
         const user = JSON.parse(localStorage.getItem("user"));
-        const roles = user?.user?.roles || user?.roles || [];
+        const roles = user?.roles || [];
         if (roles.some((role) => role.value === "admin")) setRole("admin");
         else if (roles.length > 0) setRole("user");
         else setRole(null);

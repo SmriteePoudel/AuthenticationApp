@@ -1,6 +1,10 @@
 import db from "../../../lib/mongoose.js";
 import { User, Role } from "../../../models/index.js";
 import bcrypt from "bcryptjs";
+import {
+  roles as allRoles,
+  permissions as allPermissions,
+} from "../../lib/roles.js";
 
 let users = [];
 let nextId = 1;
@@ -39,9 +43,14 @@ export async function POST(request) {
         );
       }
       const roleIds = roleDocs.map((r) => r._id);
-      const permissions = Array.from(
-        new Set(roleDocs.flatMap((r) => r.permissions))
-      );
+      let permissions;
+      if (roleDocs.some((r) => r.value === "superadmin")) {
+        permissions = [...allPermissions];
+      } else {
+        permissions = Array.from(
+          new Set(roleDocs.flatMap((r) => r.permissions))
+        );
+      }
       const user = await User.create({
         name,
         email,
@@ -50,7 +59,8 @@ export async function POST(request) {
         roles: roleIds,
         permissions,
       });
-      return Response.json({ message: "User created", user });
+      const populatedUser = await User.findById(user._id).populate("roles");
+      return Response.json({ message: "User created", user: populatedUser });
     }
 
     // Existing assign-role and check-permission logic
@@ -187,9 +197,14 @@ export async function PUT(request) {
       if (roleDocs.length > 0) {
         user.roles = roleDocs.map((r) => r._id);
 
-        const permissions = Array.from(
-          new Set(roleDocs.flatMap((r) => r.permissions || []))
-        );
+        let permissions;
+        if (roleDocs.some((r) => r.value === "superadmin")) {
+          permissions = [...allPermissions];
+        } else {
+          permissions = Array.from(
+            new Set(roleDocs.flatMap((r) => r.permissions))
+          );
+        }
         user.permissions = permissions;
         console.log("Updated permissions:", permissions);
       } else {

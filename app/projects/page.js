@@ -9,6 +9,16 @@ export default function CreateTaskPage() {
   const [error, setError] = useState("");
   const router = useRouter();
 
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const user = localStorage.getItem("user");
+      if (!user) {
+        router.replace("/login");
+        return;
+      }
+    }
+  }, [router]);
+
   const fetchTasks = async () => {
     setLoading(true);
     setError("");
@@ -61,6 +71,12 @@ export default function CreateTaskPage() {
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen bg-black text-white">
+      <button
+        className="mb-4 px-4 py-2 rounded bg-gray-500 text-white font-bold hover:bg-gray-600"
+        onClick={() => router.push("/user-dashboard")}
+      >
+        Back to Dashboard
+      </button>
       <h1 className="text-2xl font-bold mb-4">Create Project</h1>
       <form
         onSubmit={handleSubmit}
