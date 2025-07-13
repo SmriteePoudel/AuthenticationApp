@@ -36,20 +36,31 @@ export default function LoginPage() {
       } else if (Array.isArray(data?.roles)) {
         roles = data.roles;
       }
+      console.log("DEBUG: Full user data after login", data.user);
       console.log("DEBUG: roles after login", roles);
+      console.log(
+        "DEBUG: roles structure",
+        roles.map((r) => ({ value: r.value, label: r.label, _id: r._id }))
+      );
+
       const isSuperadmin = roles.some(
         (role) => role.value === "superadmin" || role === "superadmin"
       );
+      console.log("DEBUG: isSuperadmin check result", isSuperadmin);
+      console.log("DEBUG: Checking each role for superadmin:");
+      roles.forEach((role, index) => {
+        console.log(`  Role ${index}:`, {
+          value: role.value,
+          label: role.label,
+          _id: role._id,
+          isSuperadmin: role.value === "superadmin" || role === "superadmin",
+        });
+      });
 
-      // Superadmin can access both tabs
       if (isSuperadmin) {
-        if (tab === "superadmin") {
-          router.push("/admin-dashboard/superadmin");
-        } else {
-          router.push("/admin-dashboard");
-        }
+        console.log("DEBUG: Redirecting to superadmin page");
+        router.push("/admin-dashboard/superadmin");
       } else {
-        // Regular users can only use the user tab
         if (tab === "user") {
           if (roles.some((role) => role.value === "admin")) {
             router.push("/admin-dashboard");

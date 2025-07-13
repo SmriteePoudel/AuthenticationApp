@@ -37,9 +37,17 @@ export async function POST(request) {
         );
       }
     }
+    const userResponse = { ...populatedUser.toObject(), permissions };
+    console.log("DEBUG: Login API - User response:", {
+      _id: userResponse._id,
+      email: userResponse.email,
+      roles: userResponse.roles,
+      permissions: userResponse.permissions,
+    });
+
     return Response.json({
       message: "Login successful",
-      user: { ...populatedUser.toObject(), permissions },
+      user: userResponse,
     });
   } catch (err) {
     return Response.json({ message: err.message }, { status: 401 });
